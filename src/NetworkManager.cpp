@@ -1,5 +1,6 @@
 #include "RoboCatPCH.h"
 #include "NetworkManager.h"
+#include "TCPSocket.h"
 #include <iostream>
 
 /// <summary>
@@ -8,6 +9,8 @@
 /// </summary>
 void NetworkManager::Init()
 {
+	listenSocket.get()->Bind(SocketAddress());
+	listenSocket.get()->SetNonBlockingMode(true);
 }
 
 /// <summary>
@@ -21,6 +24,7 @@ void NetworkManager::Init()
 /// </summary>
 void NetworkManager::CheckForNewConnections()
 {
+	listenSocket.get()->Listen();
 }
 
 /// <summary>
@@ -30,10 +34,24 @@ void NetworkManager::CheckForNewConnections()
 /// <param name="message">Message to send</param>
 void NetworkManager::SendMessageToPeers(const std::string& message)
 {
+	for (int i = 0; i < openConnections.size(); i++)
+	{
+		listenSocket.get()->Send(message, sizeof(message));
+	}
 }
 
 void NetworkManager::PostMessagesFromPeers()
 {
+	//messageLog.AddMessage();
+
+	if (listenSocket.get()->Receive())
+	{
+
+	}
+	else
+	{
+
+	}
 }
 
 /// <summary>
