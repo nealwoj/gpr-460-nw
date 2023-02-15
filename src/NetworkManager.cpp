@@ -1,6 +1,6 @@
 #include "RoboCatPCH.h"
 #include "NetworkManager.h"
-#include "TCPSocket.h"
+//#include "TCPSocket.h"
 #include <iostream>
 
 /// <summary>
@@ -9,7 +9,9 @@
 /// </summary>
 void NetworkManager::Init()
 {
-	listenSocket.get()->Bind(SocketAddress());
+	SocketAddress sockAddr = SocketAddress();
+	//need to create a TCPSocketPtr/TCPSocket
+	listenSocket.get()->Bind(sockAddr);
 	listenSocket.get()->SetNonBlockingMode(true);
 }
 
@@ -36,22 +38,16 @@ void NetworkManager::SendMessageToPeers(const std::string& message)
 {
 	for (int i = 0; i < openConnections.size(); i++)
 	{
-		listenSocket.get()->Send(message, sizeof(message));
+		listenSocket.get()->Send(message.c_str(), sizeof(message));
 	}
 }
 
 void NetworkManager::PostMessagesFromPeers()
 {
-	//messageLog.AddMessage();
-
-	if (listenSocket.get()->Receive())
+	/*if (listenSocket.get()->Receive())
 	{
-
-	}
-	else
-	{
-
-	}
+		messageLog.AddMessage();
+	}*/
 }
 
 /// <summary>
@@ -60,4 +56,6 @@ void NetworkManager::PostMessagesFromPeers()
 /// <param name="targetAddress">The address to try to connect to.</param>
 void NetworkManager::AttemptToConnect(SocketAddressPtr targetAddress)
 {
+	SocketAddress* addr = targetAddress.get();
+	listenSocket.get()->Connect(*addr);
 }
