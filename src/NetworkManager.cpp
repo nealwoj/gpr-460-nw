@@ -9,9 +9,10 @@
 /// </summary>
 void NetworkManager::Init()
 {
-	SocketAddress sockAddr = SocketAddress();
-	//need to create a TCPSocketPtr/TCPSocket
-	listenSocket.get()->Bind(sockAddr);
+	listenSocket = SocketUtil::CreateTCPSocket(SocketAddressFamily::INET);
+	socketAddress = SocketAddressFactory::CreateIPv4FromString(/*IPv4*/);
+
+	listenSocket.get()->Bind(*socketAddress.get());
 	listenSocket.get()->SetNonBlockingMode(true);
 }
 
@@ -26,7 +27,14 @@ void NetworkManager::Init()
 /// </summary>
 void NetworkManager::CheckForNewConnections()
 {
+	SocketAddress addr;
 	listenSocket.get()->Listen();
+
+	for (int i = 0; i < connections; i++)
+	{
+		TCPSocketPtr ptr = listenSocket.get()->Accept(addr);
+		openConnections.emplace(addr, ptr);
+	}
 }
 
 /// <summary>
@@ -36,18 +44,27 @@ void NetworkManager::CheckForNewConnections()
 /// <param name="message">Message to send</param>
 void NetworkManager::SendMessageToPeers(const std::string& message)
 {
-	for (int i = 0; i < openConnections.size(); i++)
+	std::unordered_map<SocketAddress, TCPSocketPtr>::iterator iter = openConnections.begin();
+
+	while (iter != openConnections.end())
 	{
-		listenSocket.get()->Send(message.c_str(), sizeof(message));
+		iter->second.get()->Send(message.c_str(), sizeof(message));
 	}
 }
 
+//PostMessagesFromPeers() is called once per fram
+//Once implemented, it should try to receive messages from all connected peers
+//If there is no data to receive, it should return without doing anything
+//If there is data, it should post the message it received using the messageLog member variable
 void NetworkManager::PostMessagesFromPeers()
 {
-	/*if (listenSocket.get()->Receive())
+	std::unordered_map<SocketAddress, TCPSocketPtr>::iterator iter = openConnections.begin();
+	while (iter != openConnections.end())
 	{
-		messageLog.AddMessage();
-	}*/
+		iter->second.get()->Receive();
+	}
+
+	messageLog.AddMessage();
 }
 
 /// <summary>
@@ -56,6 +73,5 @@ void NetworkManager::PostMessagesFromPeers()
 /// <param name="targetAddress">The address to try to connect to.</param>
 void NetworkManager::AttemptToConnect(SocketAddressPtr targetAddress)
 {
-	SocketAddress* addr = targetAddress.get();
-	listenSocket.get()->Connect(*addr);
+	listenSocket.get()->Connect(*targetAddress.get());
 }
