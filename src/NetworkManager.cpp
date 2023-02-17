@@ -31,7 +31,8 @@ void NetworkManager::CheckForNewConnections()
 {
 	listenSocket.get()->Listen();
 
-	SocketAddress addr = SocketAddress();
+	//SocketAddress addr = *SocketAddressFactory::CreateIPv4FromString("127.0.0.1:80").get();
+	SocketAddress addr;
 	TCPSocketPtr ptr = listenSocket.get()->Accept(addr);
 
 	if (ptr != NULL)
