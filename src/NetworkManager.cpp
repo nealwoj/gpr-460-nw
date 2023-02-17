@@ -10,7 +10,7 @@
 void NetworkManager::Init()
 {
 	listenSocket = SocketUtil::CreateTCPSocket(SocketAddressFamily::INET);
-	sockAddr = SocketAddressFactory::CreateIPv4FromString("192.168.47.1:" + listenSocket.get()->GetPortNumber());
+	sockAddr = SocketAddressFactory::CreateIPv4FromString("127.0.0.1:" + listenSocket.get()->GetPortNumber());
 	messageLog = MessageLog();
 
 	if (listenSocket.get()->Bind(*sockAddr.get()) == NOERROR)
@@ -78,8 +78,8 @@ void NetworkManager::PostMessagesFromPeers()
 void NetworkManager::AttemptToConnect(SocketAddressPtr targetAddress)
 {
 	TCPSocketPtr tcp = SocketUtil::CreateTCPSocket(SocketAddressFamily::INET);
-	tcp.get()->Bind(sockAddr);
-	//tcp.get()->Listen();
+	tcp.get()->Bind(*sockAddr.get());
+	tcp.get()->Listen();
 
 	if (tcp.get()->Connect(*targetAddress.get()) == NOERROR)
 	{
