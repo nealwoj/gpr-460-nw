@@ -10,10 +10,14 @@
 void NetworkManager::Init()
 {
 	listenSocket = SocketUtil::CreateTCPSocket(SocketAddressFamily::INET);
-	sockAddr = SocketAddressFactory::CreateIPv4FromString("127.0.0.1:" + listenSocket.get()->GetPortNumber());
+	sockAddr = SocketAddressFactory::CreateIPv4FromString("localhost" + listenSocket.get()->GetPortNumber());
 
 	if (listenSocket.get()->Bind(*sockAddr.get()) == NOERROR)
-		std::cout << "Binded to " << sockAddr.get()->ToString() << std::endl;
+		messageLog.AddMessage("Binded to " + sockAddr.get()->ToString());
+	else
+		messageLog.AddMessage("Failed to bind at " + sockAddr.get()->ToString());
+
+	//blocking
 	listenSocket.get()->SetNonBlockingMode(true);
 }
 
@@ -36,7 +40,7 @@ void NetworkManager::CheckForNewConnections()
 
 	if (ptr != NULL)
 	{
-		std::cout << std::endl <<  "Accepted Connection" << std::endl;
+		messageLog.AddMessage("Accepted connection from " + addr.ToString());
 		openConnections.emplace(addr, ptr);
 	}
 }
@@ -51,7 +55,8 @@ void NetworkManager::SendMessageToPeers(const std::string& message)
 	std::unordered_map<SocketAddress, TCPSocketPtr>::iterator iter = openConnections.begin();
 	while (iter != openConnections.end())
 	{
-		iter->second.get()->Send(message.c_str(), sizeof(message));
+		if (iter->second.get()->Send(message.c_str(), sizeof(message)) < 0 )
+			messageLog.AddMessage("Failed to send message!");
 	}
 }
 
@@ -65,8 +70,19 @@ void NetworkManager::PostMessagesFromPeers()
 	while (iter != openConnections.end())
 	{
 		char* data = new char;
-		iter->second.get()->Receive(data, sizeof(data));
-		messageLog.AddMessage(data);
+		
+		if (iter->second.get()->Receive(data, sizeof(data)) < 0)
+			messageLog.AddMessage("Failed to receive data!");
+		
+		//messageLog.AddMessage(data);
+		
+		if (data != NULL)
+		{
+			string msg = static_cast<string>(data);
+			messageLog.AddMessage(msg);
+		}
+		else
+			messageLog.AddMessage("Received data was null!");
 	}
 }
 
@@ -82,7 +98,9 @@ void NetworkManager::AttemptToConnect(SocketAddressPtr targetAddress)
 
 	if (tcp.get()->Connect(*targetAddress.get()) == NOERROR)
 	{
-		std::cout << std::endl << "Connecting" << std::endl;
+		messageLog.AddMessage("Connected to " + targetAddress.get()->ToString());
 		openConnections.emplace(*targetAddress.get(), tcp);
 	}
+	else
+		messageLog.AddMessage("Failed to connect to " + targetAddress.get()->ToString());
 }
