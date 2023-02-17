@@ -10,10 +10,11 @@
 void NetworkManager::Init()
 {
 	listenSocket = SocketUtil::CreateTCPSocket(SocketAddressFamily::INET);
-	//SocketAddressPtr sock = SocketAddressFactory::CreateIPv4FromString(INADDR_ANY);
-	SocketAddress addr = SocketAddress();
+	SocketAddressPtr addr = SocketAddressFactory::CreateIPv4FromString("127.0.0.1:80");
+	messageLog = MessageLog();
 
-	listenSocket.get()->Bind(addr);
+	if (listenSocket.get()->Bind(*addr.get()) == NOERROR)
+		std::cout << "Binded on " << addr.get()->ToString() << std::endl;
 	listenSocket.get()->SetNonBlockingMode(true);
 }
 
@@ -34,7 +35,10 @@ void NetworkManager::CheckForNewConnections()
 	TCPSocketPtr ptr = listenSocket.get()->Accept(addr);
 
 	if (ptr != NULL)
+	{
+		std::cout << std::endl <<  "Accepted Connection" << std::endl;
 		openConnections.emplace(addr, ptr);
+	}
 }
 
 /// <summary>
@@ -72,5 +76,6 @@ void NetworkManager::PostMessagesFromPeers()
 /// <param name="targetAddress">The address to try to connect to.</param>
 void NetworkManager::AttemptToConnect(SocketAddressPtr targetAddress)
 {
-	listenSocket.get()->Connect(*targetAddress.get());
+	if (listenSocket.get()->Connect(*targetAddress.get()) == NOERROR)
+		std::cout << std::endl << "Connecting" << std::endl;
 }
