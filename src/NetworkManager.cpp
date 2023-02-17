@@ -10,7 +10,7 @@
 void NetworkManager::Init()
 {
 	listenSocket = SocketUtil::CreateTCPSocket(SocketAddressFamily::INET);
-	SocketAddressPtr addr = SocketAddressFactory::CreateIPv4FromString("127.0.0.1:80");
+	SocketAddressPtr addr = SocketAddressFactory::CreateIPv4FromString("127.0.0.1:" + listenSocket.get()->GetPortNumber());
 	messageLog = MessageLog();
 
 	if (listenSocket.get()->Bind(*addr.get()) == NOERROR)
@@ -77,6 +77,13 @@ void NetworkManager::PostMessagesFromPeers()
 /// <param name="targetAddress">The address to try to connect to.</param>
 void NetworkManager::AttemptToConnect(SocketAddressPtr targetAddress)
 {
-	if (listenSocket.get()->Connect(*targetAddress.get()) == NOERROR)
+	TCPSocketPtr tcp = SocketUtil::CreateTCPSocket(SocketAddressFamily::INET);
+	tcp.get()->Bind(*targetAddress.get());
+	//tcp.get()->Listen();
+
+	if (tcp.get()->Connect(*targetAddress.get()) == NOERROR)
+	{
 		std::cout << std::endl << "Connecting" << std::endl;
+		openConnections.emplace(*targetAddress.get(), tcp);
+	}
 }
