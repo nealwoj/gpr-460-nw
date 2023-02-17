@@ -10,11 +10,11 @@
 void NetworkManager::Init()
 {
 	listenSocket = SocketUtil::CreateTCPSocket(SocketAddressFamily::INET);
-	SocketAddressPtr addr = SocketAddressFactory::CreateIPv4FromString("127.0.0.1:" + listenSocket.get()->GetPortNumber());
+	sockAddr = SocketAddressFactory::CreateIPv4FromString("192.168.47.1:" + listenSocket.get()->GetPortNumber());
 	messageLog = MessageLog();
 
-	if (listenSocket.get()->Bind(*addr.get()) == NOERROR)
-		std::cout << "Binded on " << addr.get()->ToString() << std::endl;
+	if (listenSocket.get()->Bind(*sockAddr.get()) == NOERROR)
+		std::cout << "Binded on " << sockAddr.get()->ToString() << std::endl;
 	listenSocket.get()->SetNonBlockingMode(true);
 }
 
@@ -78,7 +78,7 @@ void NetworkManager::PostMessagesFromPeers()
 void NetworkManager::AttemptToConnect(SocketAddressPtr targetAddress)
 {
 	TCPSocketPtr tcp = SocketUtil::CreateTCPSocket(SocketAddressFamily::INET);
-	tcp.get()->Bind(*targetAddress.get());
+	tcp.get()->Bind(sockAddr);
 	//tcp.get()->Listen();
 
 	if (tcp.get()->Connect(*targetAddress.get()) == NOERROR)
