@@ -10,9 +10,10 @@
 void NetworkManager::Init()
 {
 	listenSocket = SocketUtil::CreateTCPSocket(SocketAddressFamily::INET);
-	socketAddress = SocketAddressFactory::CreateIPv4FromString(/*IPv4*/);
+	//SocketAddressPtr sock = SocketAddressFactory::CreateIPv4FromString(INADDR_ANY);
+	SocketAddress addr = SocketAddress();
 
-	listenSocket.get()->Bind(*socketAddress.get());
+	listenSocket.get()->Bind(addr);
 	listenSocket.get()->SetNonBlockingMode(true);
 }
 
@@ -27,14 +28,13 @@ void NetworkManager::Init()
 /// </summary>
 void NetworkManager::CheckForNewConnections()
 {
-	SocketAddress addr;
 	listenSocket.get()->Listen();
 
-	for (int i = 0; i < connections; i++)
-	{
-		TCPSocketPtr ptr = listenSocket.get()->Accept(addr);
+	SocketAddress addr = SocketAddress();
+	TCPSocketPtr ptr = listenSocket.get()->Accept(addr);
+
+	if (ptr != NULL)
 		openConnections.emplace(addr, ptr);
-	}
 }
 
 /// <summary>
@@ -45,7 +45,6 @@ void NetworkManager::CheckForNewConnections()
 void NetworkManager::SendMessageToPeers(const std::string& message)
 {
 	std::unordered_map<SocketAddress, TCPSocketPtr>::iterator iter = openConnections.begin();
-
 	while (iter != openConnections.end())
 	{
 		iter->second.get()->Send(message.c_str(), sizeof(message));
@@ -61,10 +60,10 @@ void NetworkManager::PostMessagesFromPeers()
 	std::unordered_map<SocketAddress, TCPSocketPtr>::iterator iter = openConnections.begin();
 	while (iter != openConnections.end())
 	{
-		iter->second.get()->Receive();
+		char* data = new char;
+		iter->second.get()->Receive(data, sizeof(data));
+		messageLog.AddMessage(data);
 	}
-
-	messageLog.AddMessage();
 }
 
 /// <summary>
