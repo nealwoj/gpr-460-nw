@@ -21,7 +21,6 @@ public:
 	void AttemptToConnect(SocketAddressPtr targetAddress);
 
 private:
-	SocketAddressPtr sockAddr;
 	MessageLog& messageLog;
 	TCPSocketPtr listenSocket;
 	std::unordered_map<SocketAddress, TCPSocketPtr> openConnections;

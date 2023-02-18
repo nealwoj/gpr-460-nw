@@ -10,7 +10,7 @@
 void NetworkManager::Init()
 {
 	listenSocket = SocketUtil::CreateTCPSocket(SocketAddressFamily::INET);
-	sockAddr = SocketAddressFactory::CreateIPv4FromString("localhost" + listenSocket.get()->GetPortNumber());
+	SocketAddressPtr sockAddr = SocketAddressFactory::CreateIPv4FromString("localhost" + listenSocket.get()->GetPortNumber());
 
 	if (listenSocket.get()->Bind(*sockAddr.get()) == NOERROR)
 		messageLog.AddMessage("Binded to " + sockAddr.get()->ToString());
@@ -19,6 +19,9 @@ void NetworkManager::Init()
 
 	//blocking
 	listenSocket.get()->SetNonBlockingMode(true);
+
+	//listening
+	listenSocket.get()->Listen();
 }
 
 /// <summary>
@@ -32,10 +35,7 @@ void NetworkManager::Init()
 /// </summary>
 void NetworkManager::CheckForNewConnections()
 {
-	listenSocket.get()->Listen();
-
-	//SocketAddress addr = *SocketAddressFactory::CreateIPv4FromString("127.0.0.1:0").get();
-	SocketAddress addr;
+	SocketAddress addr = *SocketAddressFactory::CreateIPv4FromString("127.0.0.1:0").get();
 	TCPSocketPtr ptr = listenSocket.get()->Accept(addr);
 
 	if (ptr != NULL)
@@ -93,8 +93,8 @@ void NetworkManager::PostMessagesFromPeers()
 void NetworkManager::AttemptToConnect(SocketAddressPtr targetAddress)
 {
 	TCPSocketPtr tcp = SocketUtil::CreateTCPSocket(SocketAddressFamily::INET);
-	//tcp.get()->Bind(*sockAddr.get());
-	//tcp.get()->Listen();
+	SocketAddressPtr sockAddr = SocketAddressFactory::CreateIPv4FromString("localhost" + listenSocket.get()->GetPortNumber());
+	tcp.get()->Bind(*sockAddr.get());
 
 	if (tcp.get()->Connect(*targetAddress.get()) == NOERROR)
 	{
